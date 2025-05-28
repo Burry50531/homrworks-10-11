@@ -1,0 +1,39 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/wait.h>
+
+#define NUM_CHILDREN 5
+
+int main() {
+    pid_t pids[NUM_CHILDREN];
+
+    // Створення дочірніх процесів з різною затримкою
+    for (int i = 0; i < NUM_CHILDREN; i++) {
+        pid_t pid = fork();
+        if (pid == 0) {
+            // Дочірній процес
+            int sleep_time = (i + 1) * 2; // різна затримка
+            printf("Child %d with PID %d sleeping for %d seconds\n", i, getpid(), sleep_time);
+            sleep(sleep_time);
+            printf("Child %d with PID %d exiting\n", i, getpid());
+            exit(i); // Повертаємо унікальний код завершення
+        } else if (pid > 0) {
+            pids[i] = pid;
+        } else {
+            perror("fork");
+            exit(1);
+        }
+    }
+
+    // Батьківський процес чекає завершення всіх дочірніх
+    int status;
+    pid_t wpid;
+    while ((wpid = wait(&status)) > 0) {
+        if (WIFEXITED(status)) {
+            printf("Parent: Child with PID %d exited with code %d\n", wpid, WEXITSTATUS(status));
+        }
+    }
+
+    return 0;
+}
